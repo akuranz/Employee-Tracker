@@ -1,5 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+const cTable = require("console.table");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -13,7 +14,7 @@ var connection = mysql.createConnection({
 // connect to the mysql server and sql database
 connection.connect(function(err) {
   if (err) throw err;
-  // run the start function after the connection is made to prompt the user
+  console.log("connected as id " + connection.threadId + "\n");
   start();
 });
 
@@ -45,6 +46,15 @@ const start = () => {
 
 const returnAllEmp = () => {
   console.log("Return All Employees");
+
+  connection.query("SELECT * FROM employees", function(err, res) {
+    if (err) throw err;
+    // Log all results of the SELECT statement
+    // console.log(res);
+    const table = cTable.getTable(res);
+    console.log(`\n${table}`);
+  });
+
   start();
 };
 
