@@ -7,7 +7,7 @@ var connection = mysql.createConnection({
   port: 3306,
   user: "root",
   password: "akuranz_1987",
-  database: "employeeTracker_DB"
+  database: "employeetracker_DB"
 });
 
 connection.connect(function(err) {
@@ -35,14 +35,14 @@ const start = () => {
       switch (userInput) {
         case "View All Employees":
           return returnAllEmp();
-        case "View All Employees by Department":
-          return returnAllEmpDept();
-        case "View All Employees by Manager":
-          return returnAllEmpMngr();
-        case "Add Employee":
-          return addEmp();
-        case "Remove Employee":
-          return removeEmp();
+        // case "View All Employees by Department":
+        //   return returnAllEmpDept();
+        // case "View All Employees by Manager":
+        //   return returnAllEmpMngr();
+        // case "Add Employee":
+        //   return addEmp();
+        // case "Remove Employee":
+        //   return removeEmp();
         case "Update Employee Role":
           return updateEmpRole();
       }
@@ -51,62 +51,102 @@ const start = () => {
 };
 
 const returnAllEmp = () => {
-  console.log("Return All Employees");
+  // console.log("Return All Employees");
 
   query = connection.query(
-    // "SELECT employees.id, employees.first_name, employees.last_name, role.title FROM employees JOIN roles ON employees.role_id = roles.id",
-    "SELECT id, first_name, last_name FROM employees",
-    // "SELECT title FROM roles",
+    "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, roles.department_id, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id",
+    // "SELECT employees.id, employees.first_name, employees.last_name, roles.title, salary, department_id FROM employeehs JOIN roles ON employees.role_id = roles.department_id",
+    // "SELECT employees.id, employees.first_name, employees.last_name, roles.title, managers.first_name FROM employees JOIN roles ON employees.role_id = roles.id JOIN managers ON employees.manager_id = managers.id",
+    // "SELECT employees.id, employees.first_name, employees.last_name, managers.first_name FROM employees JOIN managers ON employees.manager_id = managers.id",
+    // console.log(employees.first_name),
     function(err, res) {
       if (err) throw err;
       // console.log(res);
       const table = cTable.getTable(res);
       console.log(`\n${table}`);
+      connection.end();
     }
   );
-  // console.log(query.sql);
-
-  start();
+  console.log(query.sql);
 };
 
 const returnAllEmpDept = () => {
-  console.log("Return All Employees by Department");
-  start();
+  inquirer
+    .prompt([
+      {
+        type: "input", //should be a list
+        message: "Department Name:",
+        name: "departmentName"
+        //   choices: function() {
+        //     var rolesArray = [];
+        //     for (var i = 0; i < res.length; i++) {
+        //       rolesArray.push(res[i].department_id);
+        //     }
+        //     return rolesArray;
+        //   }
+      }
+    ])
+    .then(answer => {
+      query = connection.query(
+        "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, roles.department_id, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id WHERE roles.department_id=?",
+        [answer.departmentName],
+        function(err, res) {
+          if (err) throw err;
+
+          // console.log(res);
+          const table = cTable.getTable(res);
+          console.log(`\n${table}`);
+          connection.end();
+        }
+      );
+      console.log(query.sql);
+    });
 };
 
 const returnAllEmpMngr = () => {
-  console.log("Return All Employees by Manager");
-  start();
+  // console.log("Return All Employees by Manager");
 };
 
 const removeEmp = () => {
-  console.log("Remove an Employee");
-  connection.query("SELECT * FROM employees", function(err, res) {
-    if (err) throw err;
-    inquirer.prompt([
+  // console.log("Remove an Employee");
+  // connection.query("SELECT * FROM employees", function(err, res) {
+  //   if (err) throw err;
+  inquirer
+    .prompt([
       {
-        type: "list",
+        type: "input", //should be list
         message: "Which employee do you want to remove?",
-        name: "employeeName",
-        choices: function() {
-          var employeeArray = [];
-          for (var i = 0; i < res.length; i++) {
-            employeeArray.push(res[i].first_name + " " + res[i].last_name);
-          }
-          return employeeArray;
-        }
+        name: "employeeName"
+        //   choices: function() {
+        //     var employeeArray = [];
+        //     for (var i = 0; i < res.length; i++) {
+        //       employeeArray.push(res[i].first_name + " " + res[i].last_name);
+        //     }
+        //     return employeeArray;
+        //   }
       }
-    ]);
-    start();
-  });
+    ])
+    .then(answer => {
+      connection.query(
+        "DELETE FROM employees WHERE ?",
+        [
+          {
+            first_name: answer.employeeName
+          }
+        ],
+        function(err, res) {
+          if (err) throw err;
+          console.log(res.affectedRows + " products deleted!\n");
+          // Call readProducts AFTER the DELETE completes
+          readProducts();
+        }
+      );
+    });
 };
 
 const addEmp = () => {
-  console.log("Add an Employee");
-  //join with manager to return manager list for last question
-  connection.query("SELECT * FROM roles", function(err, res) {
-    if (err) throw err;
-    inquirer.prompt([
+  inquirer
+    .prompt([
       {
         type: "input",
         message: "What is your employee's first name?",
@@ -118,16 +158,16 @@ const addEmp = () => {
         name: "empLName"
       },
       {
-        type: "list",
+        type: "input",
         message: "What is your employee's role?",
-        name: "empRole",
-        choices: function() {
-          var roleArray = [];
-          for (var i = 0; i < res.length; i++) {
-            roleArray.push(res[i].title);
-          }
-          return roleArray;
-        }
+        name: "empRole"
+        // choices: function() {
+        //   var roleArray = [];
+        //   for (var i = 0; i < res.length; i++) {
+        //     roleArray.push(res[i].title);
+        //   }
+        //   return roleArray;
+        // }
       },
       {
         type: "input",
@@ -135,13 +175,65 @@ const addEmp = () => {
         name: "empMngr"
         //Need to add choices array
       }
-    ]);
-    //.then(add function from a class that adds employees)
-    start();
-  });
+    ])
+    .then(answer => {
+      connection.query(
+        "INSERT INTO employees SET ?",
+        {
+          first_name: answer.empFName,
+          last_name: answer.empLName
+        },
+        function(err) {
+          if (err) throw err;
+          console.log("Your employee was added successfully!");
+          console.log(res.affectedRows + " employees added!\n");
+          readProducts();
+        }
+      );
+    });
 };
 
 const updateEmpRole = () => {
-  console.log("Update an Employee");
-  start();
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What is your employee's first name?",
+        name: "empFName"
+      },
+      {
+        type: "input",
+        message: "What is your employee's last name?",
+        name: "empLName"
+      }
+    ])
+    .then(answer => {
+      connection.query(
+        "UPDATE employees SET ? WHERE ?",
+        [
+          {
+            first_name: answer.empFName
+          },
+          {
+            last_name: answer.empFName
+          }
+        ],
+        function(err, res) {
+          if (err) throw err;
+          console.log(res.affectedRows + " employees updated!\n");
+          // Call deleteProduct AFTER the UPDATE completes
+          // deleteProduct();
+        }
+      );
+    });
+};
+
+const readProducts = () => {
+  console.log("Selecting all products...\n");
+  connection.query("SELECT * FROM employees", function(err, res) {
+    if (err) throw err;
+    // Log all results of the SELECT statement
+    console.log(res);
+    connection.end();
+  });
 };
