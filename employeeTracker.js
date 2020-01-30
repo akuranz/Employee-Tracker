@@ -35,14 +35,14 @@ const start = () => {
       switch (userInput) {
         case "View All Employees":
           return returnAllEmp();
-        // case "View All Employees by Department":
-        //   return returnAllEmpDept();
+        case "View All Employees by Department":
+          return returnAllEmpDept();
         // case "View All Employees by Manager":
         //   return returnAllEmpMngr();
-        // case "Add Employee":
-        //   return addEmp();
-        // case "Remove Employee":
-        //   return removeEmp();
+        case "Add Employee":
+          return addEmp();
+        case "Remove Employee":
+          return removeEmp();
         case "Update Employee Role":
           return updateEmpRole();
       }
@@ -54,10 +54,10 @@ const returnAllEmp = () => {
   // console.log("Return All Employees");
 
   query = connection.query(
-    "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, roles.department_id, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id",
-    // "SELECT employees.id, employees.first_name, employees.last_name, roles.title, salary, department_id FROM employeehs JOIN roles ON employees.role_id = roles.department_id",
-    // "SELECT employees.id, employees.first_name, employees.last_name, roles.title, managers.first_name FROM employees JOIN roles ON employees.role_id = roles.id JOIN managers ON employees.manager_id = managers.id",
-    // "SELECT employees.id, employees.first_name, employees.last_name, managers.first_name FROM employees JOIN managers ON employees.manager_id = managers.id",
+    // "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, roles.department_id, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id",
+    // "SELECT employees.id, employees.first_name, employees.last_name, roles.title, salary, department_id FROM employees JOIN roles ON employees.role_id = roles.department_id",
+    "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, managers.first_name AS ManagerFirstName FROM employees JOIN roles ON employees.role_id = roles.id JOIN managers ON employees.manager_id = managers.id",
+    // "SELECT employees.id, employees.first_name, employees.last_name, managers.first_name AS ManagerFirstName FROM employees JOIN managers ON employees.manager_id = managers.id",
     // console.log(employees.first_name),
     function(err, res) {
       if (err) throw err;
@@ -71,6 +71,8 @@ const returnAllEmp = () => {
 };
 
 const returnAllEmpDept = () => {
+  // connection
+  //   .query(
   inquirer
     .prompt([
       {
@@ -86,6 +88,7 @@ const returnAllEmpDept = () => {
         //   }
       }
     ])
+    // )
     .then(answer => {
       query = connection.query(
         "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, roles.department_id, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id WHERE roles.department_id=?",
@@ -186,7 +189,7 @@ const addEmp = () => {
         function(err) {
           if (err) throw err;
           console.log("Your employee was added successfully!");
-          console.log(res.affectedRows + " employees added!\n");
+          // console.log(res.affectedRows + " employees added!\n");
           readProducts();
         }
       );
@@ -198,8 +201,8 @@ const updateEmpRole = () => {
     .prompt([
       {
         type: "input",
-        message: "What is your employee's first name?",
-        name: "empFName"
+        message: "What is your employee's role_id?",
+        name: "empRoleID"
       },
       {
         type: "input",
@@ -212,17 +215,17 @@ const updateEmpRole = () => {
         "UPDATE employees SET ? WHERE ?",
         [
           {
-            first_name: answer.empFName
+            last_name: answer.emplName
           },
           {
-            last_name: answer.empFName
+            role_id: answer.empRoleID
           }
         ],
         function(err, res) {
           if (err) throw err;
           console.log(res.affectedRows + " employees updated!\n");
-          // Call deleteProduct AFTER the UPDATE completes
-          // deleteProduct();
+          readProducts();
+          // start();
         }
       );
     });
@@ -233,7 +236,9 @@ const readProducts = () => {
   connection.query("SELECT * FROM employees", function(err, res) {
     if (err) throw err;
     // Log all results of the SELECT statement
-    console.log(res);
+    // console.log(res);
+    const table = cTable.getTable(res);
+    console.log(`\n${table}`);
     connection.end();
   });
 };
