@@ -112,39 +112,40 @@ const returnAllEmpMngr = () => {
 
 const removeEmp = () => {
   // console.log("Remove an Employee");
-  // connection.query("SELECT * FROM employees", function(err, res) {
-  //   if (err) throw err;
-  inquirer
-    .prompt([
-      {
-        type: "input", //should be list
-        message: "Which employee do you want to remove?",
-        name: "employeeName"
-        //   choices: function() {
-        //     var employeeArray = [];
-        //     for (var i = 0; i < res.length; i++) {
-        //       employeeArray.push(res[i].first_name + " " + res[i].last_name);
-        //     }
-        //     return employeeArray;
-        //   }
-      }
-    ])
-    .then(answer => {
-      connection.query(
-        "DELETE FROM employees WHERE ?",
-        [
-          {
-            first_name: answer.employeeName
-          }
-        ],
-        function(err, res) {
-          if (err) throw err;
-          console.log(res.affectedRows + " products deleted!\n");
-          // Call readProducts AFTER the DELETE completes
-          readProducts();
+  connection.query("SELECT first_name FROM employees", function(err, res) {
+    if (err) throw err;
+    inquirer
+      .prompt([
+        {
+          type: "list", //should be list
+          name: "employeeName",
+          choices: function() {
+            var employeeArray = [];
+            for (var i = 0; i < res.length; i++) {
+              employeeArray.push(res[i].first_name);
+            }
+            return employeeArray;
+          },
+          message: "Which employee do you want to remove?"
         }
-      );
-    });
+      ])
+      .then(answer => {
+        connection.query(
+          "DELETE FROM employees WHERE ?",
+          [
+            {
+              first_name: answer.employeeName
+            }
+          ],
+          function(err, res) {
+            if (err) throw err;
+            console.log(res.affectedRows + " products deleted!\n");
+            // Call readProducts AFTER the DELETE completes
+            readProducts();
+          }
+        );
+      });
+  });
 };
 
 const addEmp = () => {
