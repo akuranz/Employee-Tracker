@@ -60,8 +60,8 @@ const start = () => {
           return returnAllEmp();
         case "View All Employees by Department":
           return returnAllEmpDept(); /// OR es6 variant
-        // case "View All Employees by Manager":
-        //   return returnAllEmpMngr();
+        case "View All Employees by Manager":
+          return returnAllEmpMngr();
         case "Add Employee":
           return addEmp();
         case "Add Role":
@@ -85,7 +85,8 @@ const returnAllEmp = () => {
     employees.last_name, 
     roles.title, 
     roles.salary,
-    managers.first_name AS ManagerFirstName    
+    managers.first_name AS ManagerFirstName,    
+    departments.name AS DepartmentName
     FROM 
       employees 
     LEFT JOIN 
@@ -95,7 +96,11 @@ const returnAllEmp = () => {
     LEFT JOIN
       managers
     ON
-      employees.manager_id = managers.id`,
+      employees.manager_id = managers.id
+    LEFT JOIN 
+      departments
+    ON 
+      roles.department_id = departments.id`,
     function(err, res) {
       if (err) throw err;
       // console.log(res);
@@ -158,27 +163,32 @@ const returnAllEmpDeptES6 = async () => {
 };
 
 const returnAllEmpDept = () => {
-  connection.query("SELECT DISTINCT name FROM departments", function(err, res) {
-    if (err) throw err;
-    inquirer
-      .prompt([
-        {
-          type: "list", //should be a list
-          message: "Department Name:",
-          name: "departmentName",
-          choices: function() {
-            var deptArray = [];
-            for (var i = 0; i < res.length; i++) {
-              deptArray.push(res[i].name);
+  connection.query(
+    `SELECT DISTINCT 
+      name 
+    FROM 
+      departments`,
+    function(err, res) {
+      if (err) throw err;
+      inquirer
+        .prompt([
+          {
+            type: "list", //should be a list
+            message: "Department Name:",
+            name: "departmentName",
+            choices: function() {
+              var deptArray = [];
+              for (var i = 0; i < res.length; i++) {
+                deptArray.push(res[i].name);
+              }
+              return deptArray;
             }
-            return deptArray;
           }
-        }
-      ])
-      // )
-      .then(answer => {
-        query = connection.query(
-          `SELECT 
+        ])
+        // )
+        .then(answer => {
+          query = connection.query(
+            `SELECT 
             employees.id, 
             employees.first_name, 
             employees.last_name, 
@@ -198,22 +208,87 @@ const returnAllEmpDept = () => {
             roles.department_id = departments.id 
           WHERE 
             departments.name=?`,
-          [answer.departmentName],
-          function(err, res) {
-            if (err) throw err;
-            // console.log(res);
-            const table = cTable.getTable(res);
-            console.log(`\n${table}`);
-            connection.end();
-          }
-        );
-        console.log(query.sql);
-      });
-  });
+            [answer.departmentName],
+            function(err, res) {
+              if (err) throw err;
+              // console.log(res);
+              const table = cTable.getTable(res);
+              console.log(`\n${table}`);
+              connection.end();
+            }
+          );
+          console.log(query.sql);
+        });
+    }
+  );
 };
 
 const returnAllEmpMngr = () => {
-  // add manager join
+  connection.query(
+    `SELECT DISTINCT 
+      managers.first_name,
+      managers.id
+    FROM 
+      managers`,
+    function(err, res) {
+      if (err) throw err;
+      inquirer
+        .prompt([
+          {
+            type: "list", //should be a list
+            message: "Manager Name:",
+            name: "managerName",
+            choices: function() {
+              var mngrArray = [];
+              for (var i = 0; i < res.length; i++) {
+                mngrArray.push(res[i].first_name);
+              }
+              return mngrArray;
+            }
+          }
+        ])
+        // )
+        .then(answer => {
+          let query = connection.query(
+            `SELECT 
+            employees.id, 
+            employees.first_name, 
+            employees.last_name, 
+            employees.manager_id, 
+            roles.title, 
+            roles.salary, 
+            departments.name as department,
+            managers.id,
+            managers.first_name as manager
+          FROM 
+            employees 
+          LEFT JOIN 
+            roles 
+          ON 
+            employees.role_id = roles.id 
+          LEFT JOIN 
+            departments 
+          ON 
+            roles.department_id = departments.id 
+          LEFT JOIN 
+            managers
+          ON 
+            managers.id = employees.manager_id
+          WHERE 
+            managers.first_name=?`,
+            [answer.managerName],
+            function(err, res) {
+              if (err) throw err;
+              // console.log(res);
+              const table = cTable.getTable(res);
+              console.log(`\n${table}`);
+              connection.end();
+            }
+          );
+          console.log(query.sql);
+        });
+    }
+  );
 };
 
 const removeEmp = () => {
@@ -335,12 +410,12 @@ const addEmp = () => {
           {
             type: "input",
             message: "What is your employee's first name?",
-            name: "last_name"
+            name: "first_name"
           },
           {
             type: "input",
             message: "What is your employee's last name?",
-            name: "first_name"
+            name: "last_name"
           },
           {
             type: "list",
@@ -422,12 +497,12 @@ const addRole = () => {
           {
             type: "input",
             message: "What is your employee's first name?",
-            name: "last_name"
+            name: "first_name"
           },
           {
             type: "input",
             message: "What is your employee's last name?",
-            name: "first_name"
+            name: "last_name"
           },
           {
             type: "list",

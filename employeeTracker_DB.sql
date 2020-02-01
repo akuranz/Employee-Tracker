@@ -54,9 +54,9 @@ VALUES ("John", "Doe", 1, 3), ("Mike", "Chan", 2, 1), ("Ashley", "Rodriguez", 3,
 -- SELECT employees.first_name AS firstName, roles.title AS title FROM employees JOIN roles ON roles.id=employees.role_id UNION ALL SELECT roles.title AS title, departments.name AS departmentName FROM departments RIGHT JOIN roles ON departments.name = roles.department_id;
 
 
--- SELECT * FROM departments;
--- SELECT * FROM roles;
--- SELECT * FROM employees;
--- SELECT * FROM managers;
+SELECT * FROM departments;
+SELECT * FROM roles;
+SELECT * FROM employees;
+SELECT * FROM managers;
 
 -- SELECT employees.id, employees.first_name, employees.last_name, managers.first_name AS ManagerFirstName FROM employees JOIN managers ON employees.manager_id = managers.id;
