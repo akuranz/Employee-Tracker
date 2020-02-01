@@ -16,6 +16,29 @@ connection.connect(function(err) {
   start();
 });
 
+const query = (query, data = []) =>
+  new Promise((resolve, reject) => {
+    connection.query(query, data, (err, result) => {
+      if (err) reject(err);
+      resolve(result);
+    });
+  });
+
+// query
+//   .then(result => {
+//     console.log(result)
+//   })
+//   .catch(error => {
+//     console.log(error)
+//   })
+// const getQuery = async () => {
+//   try {
+//     const result = await query('SELECT * FROM ??', ['table'])
+//   } catch (error) {
+//     console.log(error)
+//   }
+// }
+
 const start = () => {
   inquirer
     .prompt({
@@ -36,11 +59,11 @@ const start = () => {
         case "View All Employees":
           return returnAllEmp();
         case "View All Employees by Department":
-          return returnAllEmpDept();
+          return returnAllEmpDept(); /// OR es6 variant
         // case "View All Employees by Manager":
         //   return returnAllEmpMngr();
         case "Add Employee":
-          return addEmp();
+          return addEmpES6();
         case "Remove Employee":
           return removeEmp();
         case "Update Employee Role":
@@ -71,6 +94,54 @@ const returnAllEmp = () => {
 };
 
 //NEED NEW JOIN
+const returnAllEmpDeptES6 = async () => {
+  try {
+    const departments = await query(
+      "SELECT DISTINCT name, id FROM departments"
+    );
+    const { departmentID } = await inquirer.prompt([
+      {
+        type: "list", //should be a list
+        message: "Department Name:",
+        name: "departmentID",
+        choices: function() {
+          var deptArray = [];
+          for (var i = 0; i < departments.length; i++) {
+            deptArray.push({
+              name: departments[i].name,
+              value: departments[i].id
+            });
+          }
+          return deptArray;
+        }
+      }
+    ]);
+    const qryStr = `SELECT 
+                      employees.id,
+                      employees.first_name, 
+                      employees.last_name, 
+                      employees.manager_id, 
+                      roles.title, 
+                      roles.salary, 
+                      departments.name as department
+                    FROM 
+                      employees 
+                    LEFT JOIN 
+                      roles 
+                    ON 
+                      employees.role_id = roles.id 
+                    LEFT JOIN
+                      departments
+                    ON
+                      roles.department_id = departments.id
+                    WHERE
+                      departments.id = ?`;
+    const response = await query(qryStr, [departmentID]);
+    console.log(response);
+  } catch (error) {
+    console.log(error);
+  }
+};
 const returnAllEmpDept = () => {
   connection.query(
     // "SELECT DISTINCT departments.name FROM roles JOIN departments ON roles.department_id = departments.name",
@@ -95,7 +166,8 @@ const returnAllEmpDept = () => {
         // )
         .then(answer => {
           query = connection.query(
-            "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, roles.department_id, employees.manager_id FROM employees JOIN roles ON employees.role_id = roles.id WHERE roles.department_id=?", //need to make this a different join with departments
+            "SELECT employees.id, employees.first_name, employees.last_name, roles.title, roles.salary, departments.name as department, employees.manager_id FROM employees LEFT JOIN roles ON employees.role_id = roles.id LEFT JOIN departments ON roles.department_id = departments.id WHERE departments.name=?", //need to make this a different join with departments
+            // "SELECT employees.first_name, roles.title AS title, departments.name AS departmentName FROM employees LEFT JOIN roles ON roles.id=employees.role_id JOIN departments ON departments.name = roles.department_id",
             [answer.departmentName],
             function(err, res) {
               if (err) throw err;
@@ -113,7 +185,7 @@ const returnAllEmpDept = () => {
 };
 
 const returnAllEmpMngr = () => {
-  // console.log("Return All Employees by Manager");
+  // add manager join
 };
 
 const removeEmp = () => {
@@ -152,6 +224,62 @@ const removeEmp = () => {
         );
       });
   });
+};
+
+const addEmpES6 = async () => {
+  try {
+    const roles = await query("SELECT title, id FROM roles");
+    const managers = await query(
+      "SELECT first_name, last_name, id FROM managers"
+    );
+    const answers = await inquirer.prompt([
+      {
+        type: "input",
+        message: "What is your employee's first name?",
+        name: "first_name"
+      },
+      {
+        type: "input",
+        message: "What is your employee's last name?",
+        name: "last_name"
+      },
+      {
+        type: "list",
+        message: "What is your employee's role?",
+        name: "role_id",
+        choices: roles.map(role => ({
+          name: role.title,
+          value: role.id
+        }))
+        // choices: function() {
+        //   var roleArray = [];
+        //   for (var i = 0; i < roles.length; i++) {
+        //     roleArray.push({
+        //       name: roles[i].title,
+        //       values: roles[i].id
+        //     });
+        //   }
+        //   return roleArray;
+        // }
+      },
+      {
+        type: "list", //change to list
+        message: "Who is your employee's manager?",
+        name: "manager_id",
+        choices: managers.map(mngr => ({
+          name: mngr.last_name + ", " + mngr.first_name,
+          value: mngr.id
+        }))
+        //Need to add choices array
+      }
+    ]);
+
+    const qryStr = `INSERT INTO employees SET ?`;
+    const result = await query(qryStr, answers);
+    console.log(answers, result);
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 const addEmp = () => {
