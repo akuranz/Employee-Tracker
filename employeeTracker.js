@@ -16,13 +16,13 @@ connection.connect(function(err) {
   start();
 });
 
-const query = (query, data = []) =>
-  new Promise((resolve, reject) => {
-    connection.query(query, data, (err, result) => {
-      if (err) reject(err);
-      resolve(result);
-    });
-  });
+// const query = (query, data = []) =>
+//   new Promise((resolve, reject) => {
+//     connection.query(query, data, (err, result) => {
+//       if (err) reject(err);
+//       resolve(result);
+//     });
+//   });
 
 // query
 //   .then(result => {
@@ -50,6 +50,8 @@ const start = () => {
         "View All Employees by Department",
         "View All Employees by Manager",
         "Add Employee",
+        "Add Department",
+        "Add Role",
         "Remove Employee",
         "Update Employee Role"
       ]
@@ -64,6 +66,10 @@ const start = () => {
           return returnAllEmpMngr();
         case "Add Employee":
           return addEmp();
+        case "Add Department":
+          return addDept();
+        case "Add Role":
+          return addRole();
         case "Add Role":
           return addRole();
         case "Remove Employee":
@@ -163,7 +169,7 @@ const returnAllEmpDeptES6 = async () => {
 };
 
 const returnAllEmpDept = () => {
-  connection.query(
+  let query = connection.query(
     `SELECT DISTINCT 
       name 
     FROM 
@@ -187,7 +193,7 @@ const returnAllEmpDept = () => {
         ])
         // )
         .then(answer => {
-          query = connection.query(
+          let query = connection.query(
             `SELECT 
             employees.id, 
             employees.first_name, 
@@ -195,7 +201,7 @@ const returnAllEmpDept = () => {
             employees.manager_id, 
             roles.title, 
             roles.salary, 
-            departments.name as department
+            departments.name as departmentName
           FROM 
             employees 
           LEFT JOIN 
@@ -217,14 +223,14 @@ const returnAllEmpDept = () => {
               connection.end();
             }
           );
-          console.log(query.sql);
+          // console.log(query.sql);
         });
     }
   );
 };
 
 const returnAllEmpMngr = () => {
-  connection.query(
+  let query = connection.query(
     `SELECT DISTINCT 
       managers.first_name,
       managers.id
@@ -326,8 +332,8 @@ const removeEmp = () => {
             function(err, res) {
               if (err) throw err;
               console.log(res.affectedRows + " products deleted!\n");
-              // Call readProducts AFTER the DELETE completes
-              readProducts();
+              // Call readEmpTable AFTER the DELETE completes
+              readEmpTable();
             }
           );
         });
@@ -335,6 +341,7 @@ const removeEmp = () => {
   );
 };
 
+//ES6 Async Await Promises
 const addEmpES6 = async () => {
   try {
     const roles = await query("SELECT title, id FROM roles");
@@ -392,17 +399,19 @@ const addEmpES6 = async () => {
 
 const addEmp = () => {
   connection.query(
-    `SELECT  
-      roles.title, 
-      roles.id,
-      departments.id,
-      departments.name
-    FROM 
-      roles
-    LEFT JOIN 
-      departments
-    ON 
-      roles.department_id = departments.id`,
+    `SELECT 
+    employees.id, 
+    employees.first_name, 
+    employees.last_name, 
+    employees.role_id,
+    roles.id,
+    roles.title
+  FROM 
+    employees 
+  LEFT JOIN 
+    roles 
+  ON 
+    employees.role_id = roles.id`,
     function(err, res) {
       if (err) throw err;
       inquirer
@@ -425,16 +434,16 @@ const addEmp = () => {
               name: role.title,
               value: role.id
             }))
-          },
-          {
-            type: "list",
-            message: "What is your employee's department?",
-            name: "name",
-            choices: res.map(department => ({
-              name: department.name,
-              value: department.id
-            }))
           }
+          // {
+          //   type: "list",
+          //   message: "What is your employee's department?",
+          //   name: "name",
+          //   choices: res.map(department => ({
+          //     name: department.name,
+          //     value: department.id
+          //   }))
+          // }
           // {
           //   type: "list",
           //   message: "Who is your employee's manager?",
@@ -446,7 +455,7 @@ const addEmp = () => {
           // }
         ])
         .then(answer => {
-          console.log(answer);
+          // console.log("answer 1", answer.role_id.name);
           connection.query(
             "INSERT INTO employees SET ?",
             {
@@ -456,25 +465,28 @@ const addEmp = () => {
             },
             function(err) {
               if (err) throw err;
+              console.log("Your employee was added successfully!");
+              console.log(res.affectedRows + " employees added!\n");
+              readEmpTable();
             }
           );
           return answer;
-        })
-        .then(answer => {
-          console.log(answer);
-          connection.query(
-            "INSERT INTO departments SET ?",
-            {
-              name: answer.name
-            },
-            function(err) {
-              if (err) throw err;
-              console.log("Your employee was added successfully!");
-              console.log(res.affectedRows + " employees added!\n");
-              readProducts();
-            }
-          );
         });
+      // .then(answer => {
+      //   console.log(answer);
+      //   connection.query(
+      //     "INSERT INTO departments SET ?",
+      //     {
+      //       name: answer.name
+      //     },
+      //     function(err) {
+      //       if (err) throw err;
+      //       console.log("Your employee was added successfully!");
+      //       console.log(res.affectedRows + " employees added!\n");
+      //       readEmpTable();
+      //     }
+      //   );
+      // });
     }
   );
 };
@@ -482,62 +494,107 @@ const addEmp = () => {
 const addRole = () => {
   connection.query(
     `SELECT 
-      roles.title, 
-      roles.id 
-    FROM 
-      roles 
-    JOIN 
-      employees 
-    ON 
-      employees.role_id = roles.id`,
+    roles.title, 
+    roles.salary,
+    roles.department_id,
+    departments.name,
+    departments.id
+  FROM 
+    roles
+  LEFT JOIN 
+    departments
+  ON 
+    roles.department_id = departments.id`,
     function(err, res) {
       if (err) throw err;
       inquirer
         .prompt([
           {
             type: "input",
-            message: "What is your employee's first name?",
-            name: "first_name"
+            message: "What role would you like to add?",
+            name: "title"
           },
           {
             type: "input",
-            message: "What is your employee's last name?",
-            name: "last_name"
+            message: "What is the salary for the role?",
+            name: "salary"
           },
           {
             type: "list",
-            message: "What is your employee's role?",
-            name: "role_id",
-            choices: res.map(role => ({
-              name: role.title,
-              value: role.id
+            message: "In which department is the role included?",
+            name: "name",
+            choices: res.map(department => ({
+              name: department.name,
+              value: department.id
             }))
           }
-          // {
-          //   type: "list",
-          //   message: "Who is your employee's manager?",
-          //   name: "manager_id",
-          //   choices: managers.map(mngr => ({
-          //     name: mngr.first_name + " " + mngr.last_name,
-          //     value: mngr.id
-          //   }))
-          // }
         ])
         .then(answer => {
+          // console.log("Dept Choices", name.name);
+          // console.log("Dept Choices", name.value);
           connection.query(
-            "INSERT INTO employees SET ?",
+            "INSERT INTO roles SET ?",
             {
-              first_name: answer.first_name,
-              last_name: answer.last_name,
-              role_id: answer.role_id
+              title: answer.title,
+              salary: answer.salary,
+              department_id: answer.name
             },
             function(err) {
               if (err) throw err;
-              console.log("Your employee was added successfully!");
-              console.log(res.affectedRows + " employees added!\n");
-              readProducts();
+              console.log("Your department was added successfully!");
+              readRolesTable();
             }
           );
+          return answer;
+        })
+        .then(answer => {
+          // console.log(answer);
+          connection.query(
+            "INSERT INTO departments SET ?",
+            {
+              name: answer.name
+            },
+            function(err) {
+              if (err) throw err;
+            }
+          );
+          // return answer;
+        });
+    }
+  );
+};
+
+const addDept = () => {
+  connection.query(
+    `SELECT 
+    departments.id,
+    departments.name
+  FROM 
+    departments`,
+    function(err, res) {
+      if (err) throw err;
+      inquirer
+        .prompt([
+          {
+            type: "input",
+            message: "What is the department you would like to add?",
+            name: "name"
+          }
+        ])
+        .then(answer => {
+          // console.log(answer);
+          connection.query(
+            "INSERT INTO departments SET ?",
+            {
+              name: answer.name
+            },
+            function(err) {
+              if (err) throw err;
+              console.log("Your department was added successfully!");
+              readDeptTable();
+            }
+          );
+          return answer;
         });
     }
   );
@@ -546,20 +603,30 @@ const addRole = () => {
 const updateEmpRole = () => {
   connection.query(
     `SELECT 
+      employees.id, 
+      employees.first_name, 
+      employees.last_name, 
       roles.title, 
-      roles.id,
-      employees.last_name,
-      employees.role_id,
-      employees.id
+      roles.salary,
+      managers.first_name AS ManagerFirstName,    
+      departments.name AS DepartmentName
     FROM 
-      roles 
-    LEFT JOIN 
       employees 
+    LEFT JOIN 
+      roles 
     ON 
-      employees.role_id = roles.id`,
+      employees.role_id = roles.id
+    LEFT JOIN
+      managers
+    ON
+      employees.manager_id = managers.id
+    LEFT JOIN 
+      departments
+    ON 
+      roles.department_id = departments.id`,
     function(err, res) {
       if (err) throw err;
-      console.log("updateResponse:", res);
+      // console.log("updateResponse:", res);
       inquirer
         .prompt([
           {
@@ -582,8 +649,8 @@ const updateEmpRole = () => {
           }
         ])
         .then(answer => {
-          console.log("update1", answer);
-          console.log("answer.title", answer.title);
+          // console.log("update1", answer);
+          // console.log("answer.title", answer.title);
           connection.query(
             "SELECT * FROM employees WHERE role_id=?",
             [
@@ -594,13 +661,13 @@ const updateEmpRole = () => {
             function(err, res) {
               if (err) throw err;
               console.log(res.affectedRows + " employees updated!\n");
-              readProducts();
+              // readProducts();
             }
           );
           return answer;
         })
         .then(answer => {
-          console.log("update2", answer.last_name);
+          // console.log("update2", answer.last_name);
           connection.query(
             "UPDATE employees SET ? WHERE ?",
             [
@@ -614,7 +681,7 @@ const updateEmpRole = () => {
             function(err, res) {
               if (err) throw err;
               console.log(res.affectedRows + " employees updated!\n");
-              readProducts();
+              readEmpTable();
             }
           );
         });
@@ -622,33 +689,70 @@ const updateEmpRole = () => {
   );
 };
 
-const readProducts = () => {
-  console.log("Selecting all products...\n");
+const readEmpTable = () => {
   connection.query(
     `SELECT 
       employees.id, 
       employees.first_name, 
       employees.last_name, 
-      roles.title, roles.salary, 
-      managers.first_name AS ManagerFirstName 
+      roles.title, roles.salary,
+      managers.first_name AS ManagerFirstName,
+      managers.last_name AS ManagerLastName,
+      departments.name AS DepartmentName
     FROM 
       employees 
     LEFT JOIN 
       roles 
     ON 
-      employees.role_id = roles.id 
-    LEFT JOIN 
-      managers 
-    ON 
+      employees.role_id = roles.id
+    LEFT JOIN
+      managers
+    ON
       employees.manager_id = managers.id
-    LEFT JOIN 
-      departments 
-    ON 
+    LEFT JOIN
+      departments
+    ON
       roles.department_id = departments.id`,
     function(err, res) {
       if (err) throw err;
-      // Log all results of the SELECT statement
-      // console.log(res);
+      const table = cTable.getTable(res);
+      console.log(`\n${table}`);
+      connection.end();
+    }
+  );
+};
+
+const readRolesTable = () => {
+  connection.query(
+    `SELECT 
+      roles.id,
+      roles.title,
+      roles.salary,
+      departments.name
+    FROM
+      departments
+    LEFT JOIN
+      roles
+    ON
+      roles.department_id = departments.id`,
+    function(err, res) {
+      if (err) throw err;
+      const table = cTable.getTable(res);
+      console.log(`\n${table}`);
+      connection.end();
+    }
+  );
+};
+
+const readDeptTable = () => {
+  connection.query(
+    `SELECT 
+      departments.id,
+      departments.name
+    FROM 
+      departments`,
+    function(err, res) {
+      if (err) throw err;
       const table = cTable.getTable(res);
       console.log(`\n${table}`);
       connection.end();
