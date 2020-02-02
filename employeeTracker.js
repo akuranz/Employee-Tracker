@@ -518,16 +518,16 @@ const addRole = () => {
             type: "input",
             message: "What is the salary for the role?",
             name: "salary"
-          },
-          {
-            type: "list",
-            message: "In which department is the role included?",
-            name: "name",
-            choices: res.map(department => ({
-              name: department.name,
-              value: department.id
-            }))
           }
+          // {
+          //   type: "list",
+          //   message: "In which department is the role included?",
+          //   name: "name",
+          //   choices: res.map(department => ({
+          //     name: department.name,
+          //     value: department.id
+          //   }))
+          // }
         ])
         .then(answer => {
           // console.log("Dept Choices", name.name);
@@ -545,21 +545,21 @@ const addRole = () => {
               readRolesTable();
             }
           );
-          return answer;
-        })
-        .then(answer => {
-          // console.log(answer);
-          connection.query(
-            "INSERT INTO departments SET ?",
-            {
-              name: answer.name
-            },
-            function(err) {
-              if (err) throw err;
-            }
-          );
           // return answer;
         });
+      // .then(answer => {
+      //   // console.log(answer);
+      //   connection.query(
+      //     "INSERT INTO departments SET ?",
+      //     {
+      //       name: answer.name
+      //     },
+      //     function(err) {
+      //       if (err) throw err;
+      //     }
+      //   );
+      //   // return answer;
+      // });
     }
   );
 };
