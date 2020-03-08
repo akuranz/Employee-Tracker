@@ -43,7 +43,7 @@ const start = () => {
   inquirer
     .prompt({
       name: "userInput",
-      type: "list",
+      type: "rawlist",
       message: "Would you like to do?",
       choices: [
         "View All Employees",
@@ -53,7 +53,8 @@ const start = () => {
         "Add Department",
         "Add Role",
         "Remove Employee",
-        "Update Employee Role"
+        "Update Employee Role",
+        "EXIT"
       ]
     })
     .then(({ userInput }) => {
@@ -76,8 +77,9 @@ const start = () => {
           return removeEmp();
         case "Update Employee Role":
           return updateEmpRole();
+        case "EXIT":
+          connection.end();
       }
-      connection.end();
     });
 };
 
@@ -112,10 +114,9 @@ const returnAllEmp = () => {
       // console.log(res);
       const table = cTable.getTable(res);
       console.log(`\n${table}`);
-      connection.end();
+      start();
     }
   );
-  console.log(query.sql);
 };
 
 //ES6 Async Await Promises
@@ -126,7 +127,7 @@ const returnAllEmpDeptES6 = async () => {
     );
     const { departmentID } = await inquirer.prompt([
       {
-        type: "list", //should be a list
+        type: "rawlist", //should be a list
         message: "Department Name:",
         name: "departmentID",
         choices: function() {
@@ -169,7 +170,7 @@ const returnAllEmpDeptES6 = async () => {
 };
 
 const returnAllEmpDept = () => {
-  let query = connection.query(
+  connection.query(
     `SELECT DISTINCT 
       name 
     FROM 
@@ -179,7 +180,7 @@ const returnAllEmpDept = () => {
       inquirer
         .prompt([
           {
-            type: "list", //should be a list
+            type: "rawlist", //should be a list
             message: "Department Name:",
             name: "departmentName",
             choices: function() {
@@ -193,7 +194,7 @@ const returnAllEmpDept = () => {
         ])
         // )
         .then(answer => {
-          let query = connection.query(
+          connection.query(
             `SELECT 
             employees.id, 
             employees.first_name, 
@@ -220,7 +221,7 @@ const returnAllEmpDept = () => {
               // console.log(res);
               const table = cTable.getTable(res);
               console.log(`\n${table}`);
-              connection.end();
+              start();
             }
           );
           // console.log(query.sql);
@@ -241,7 +242,7 @@ const returnAllEmpMngr = () => {
       inquirer
         .prompt([
           {
-            type: "list", //should be a list
+            type: "rawlist", //should be a list
             message: "Manager Name:",
             name: "managerName",
             choices: function() {
@@ -288,7 +289,7 @@ const returnAllEmpMngr = () => {
               // console.log(res);
               const table = cTable.getTable(res);
               console.log(`\n${table}`);
-              connection.end();
+              start();
             }
           );
           console.log(query.sql);
@@ -309,7 +310,7 @@ const removeEmp = () => {
       inquirer
         .prompt([
           {
-            type: "list", //should be list
+            type: "rawlist", //should be list
             name: "employeeName",
             choices: function() {
               var employeeArray = [];
@@ -360,7 +361,7 @@ const addEmpES6 = async () => {
         name: "last_name"
       },
       {
-        type: "list",
+        type: "rawlist",
         message: "What is your employee's role?",
         name: "role_id",
         choices: roles.map(role => ({
@@ -379,7 +380,7 @@ const addEmpES6 = async () => {
         // }
       },
       {
-        type: "list",
+        type: "rawlist",
         message: "Who is your employee's manager?",
         name: "manager_id",
         choices: managers.map(mngr => ({
@@ -427,7 +428,7 @@ const addEmp = () => {
             name: "last_name"
           },
           {
-            type: "list",
+            type: "rawlist",
             message: "What is your employee's role?",
             name: "role_id",
             choices: res.map(role => ({
@@ -630,7 +631,7 @@ const updateEmpRole = () => {
       inquirer
         .prompt([
           {
-            type: "list", //should be a list
+            type: "rawlist", //should be a list
             message: "Which employee would you like to update?",
             name: "last_name",
             choices: res.map(emp => ({
@@ -639,7 +640,7 @@ const updateEmpRole = () => {
             }))
           },
           {
-            type: "list",
+            type: "rawlist",
             message: "Which role do you want to asign to the employee?",
             name: "title",
             choices: res.map(role => ({
@@ -717,7 +718,7 @@ const readEmpTable = () => {
       if (err) throw err;
       const table = cTable.getTable(res);
       console.log(`\n${table}`);
-      connection.end();
+      start();
     }
   );
 };
@@ -727,19 +728,14 @@ const readRolesTable = () => {
     `SELECT 
       roles.id,
       roles.title,
-      roles.salary,
-      departments.name
+      roles.salary
     FROM
-      departments
-    LEFT JOIN
-      roles
-    ON
-      roles.department_id = departments.id`,
+    roles`,
     function(err, res) {
       if (err) throw err;
       const table = cTable.getTable(res);
       console.log(`\n${table}`);
-      connection.end();
+      start();
     }
   );
 };
@@ -755,7 +751,7 @@ const readDeptTable = () => {
       if (err) throw err;
       const table = cTable.getTable(res);
       console.log(`\n${table}`);
-      connection.end();
+      start();
     }
   );
 };
